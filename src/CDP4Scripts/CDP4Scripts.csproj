@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net45;net451;net452;net46;net461;net462;net47;net471;net472</TargetFrameworks>
+        <Company>RHEA System S.A.</Company>
+        <Title>CDP4Scripts Community Edition</Title>
+        <Version>0.1.0</Version>
+        <Description>CDP4 library to facility scripting with languages such as Python</Description>
+        <Copyright>Copyright © RHEA System S.A.</Copyright>
+        <Authors>Sam, Merlin, Alex, Naron</Authors>
+        <PackageId>CDP4Scripts-CE</PackageId>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+        <PackageProjectUrl>http://sdk.cdp4.org</PackageProjectUrl>
+        <PackageIconUrl>https://raw.githubusercontent.com/RHEAGROUP/CDP4-Scripts/master/docs/cdp4-icon.png</PackageIconUrl>
+        <RepositoryUrl>https://github.com/RHEAGROUP/CDP4-Scripts.git</RepositoryUrl>
+        <PackageTags>CDP CDP4 ECSS-E-TM-10-25 Python</PackageTags>
+        <PackageLicenseUrl>https://github.com/RHEAGROUP/CDP4-Scripts/blob/master/COPYING.LESSER</PackageLicenseUrl>
+        <PackageReleaseNotes>
+        </PackageReleaseNotes>
+        <Configurations>Debug;Release;Dev</Configurations>
+        <AssemblyName>CDP4Scripts</AssemblyName>
+        <RootNamespace>CDP4Scripts</RootNamespace>
+    </PropertyGroup>
+
+    <Choose>
+        <When Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Release'">
+        </When>
+
+        <When Condition="'$(Configuration)'=='Dev'">
+        </When>
+    </Choose>
+
+    <ItemGroup>
+      <Compile Remove="CdpServicesDal.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CDP4ServicesDal-CE" Version="2.0.1" />
+      <PackageReference Include="CDP4WspDal-CE" Version="2.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="System.ComponentModel.Composition" />
+        <Reference Include="System.Net" />
+        <Reference Include="System.Net.Http" />
+    </ItemGroup>
+
+</Project>

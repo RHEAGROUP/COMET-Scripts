@@ -1,0 +1,7 @@
+/.arcconfig
+/.vs/CDP4Scripts/v15/*
+/src/CDP4Scripts/bin/*
+/src/CDP4Scripts/obj/*
+/tests/CDP4Scripts.Tests/bin/*
+/tests/CDP4Scripts.Tests/obj/*
+/.vs/CDP4Scripts/DesignTimeBuild/.dtbcache
