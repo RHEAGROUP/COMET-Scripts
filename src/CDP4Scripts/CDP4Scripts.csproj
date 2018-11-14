@@ -10,8 +10,8 @@
         <Authors>Sam, Merlin, Alex, Naron</Authors>
         <PackageId>CDP4Scripts-CE</PackageId>
         <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-        <PackageProjectUrl>http://sdk.cdp4.org</PackageProjectUrl>
-        <PackageIconUrl>https://raw.githubusercontent.com/RHEAGROUP/CDP4-Scripts/master/docs/cdp4-icon.png</PackageIconUrl>
+        <PackageProjectUrl>http://cdp4-scripts.cdp4.org</PackageProjectUrl>
+        <PackageIconUrl>https://raw.githubusercontent.com/RHEAGROUP/CDP4-Scripts/master/cdp4-icon.png</PackageIconUrl>
         <RepositoryUrl>https://github.com/RHEAGROUP/CDP4-Scripts.git</RepositoryUrl>
         <PackageTags>CDP CDP4 ECSS-E-TM-10-25 Python</PackageTags>
         <PackageLicenseUrl>https://github.com/RHEAGROUP/CDP4-Scripts/blob/master/COPYING.LESSER</PackageLicenseUrl>
