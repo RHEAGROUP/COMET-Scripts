@@ -4,12 +4,12 @@ The CDP4-Scripts library is a .NET library for scripting language users (such as
 
 ## Build status
 
-AppVeyor is used to build and test the C# CDP4-SDK
+AppVeyor is used to build and test the CDP4-Scripts library
 
 Branch | Build Status
 ------- | :------------
-Master |  [![Build Status](https://ci.appveyor.com/api/projects/status/xxx/branch/master?svg=true)](https://ci.appveyor.com/api/projects/status/xxx)
-Development |  [![Build Status](https://ci.appveyor.com/api/projects/status/xxx/branch/development?svg=true)](https://ci.appveyor.com/api/projects/status/xxx)
+Master |  [![Build Status](https://ci.appveyor.com/api/projects/status/ff9qkg50yvkgi811/branch/master?svg=true)](https://ci.appveyor.com/api/projects/status/ff9qkg50yvkgi811)
+Development |  [![Build Status](https://ci.appveyor.com/api/projects/status/ff9qkg50yvkgi811/branch/development?svg=true)](https://ci.appveyor.com/api/projects/status/ff9qkg50yvkgi811)
 
 [![Build history](https://buildstats.info/appveyor/chart/samatrhea/cdp4-scripts)](https://ci.appveyor.com/project/samatrhea/cdp4-scripts/history)
 
