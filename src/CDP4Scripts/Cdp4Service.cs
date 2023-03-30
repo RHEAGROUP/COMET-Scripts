@@ -36,6 +36,7 @@ namespace CDP4Scripts
     using CDP4Common.Types;
     using CDP4Dal;
     using CDP4Dal.DAL;
+    using CDP4Dal.Permission;
     using CDP4ServicesDal;
     using CDP4WspDal;
 
@@ -48,6 +49,11 @@ namespace CDP4Scripts
         /// The current <see cref="ISession"/>
         /// </summary>
         private readonly ISession session;
+
+        /// <summary>
+        /// The <see cref="IPermissionService"/>
+        /// </summary>
+        private readonly IPermissionService permissionService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Cdp4Service"/>
@@ -82,13 +88,20 @@ namespace CDP4Scripts
                 this.session = new Session(new WspDal(), new Credentials(user, pwd, new Uri(host), proxySettings));
             }
 
-            this.Read = new DataReadService(this.session);
+            this.permissionService = new PermissionService(this.session);
+            this.Read = new DataReadService(this.session, this.permissionService);
+            this.Write = new DataWriteService(this.session, this.permissionService);
         }
 
         /// <summary>
         /// Gets the <see cref="DataReadService"/>
         /// </summary>
         public DataReadService Read { get; }
+
+        /// <summary>
+        /// Gets the <see cref="DataWriteService"/>
+        /// </summary>
+        public DataWriteService Write { get; }
 
         /// <summary>
         /// Refreshes the specified data
@@ -145,7 +158,7 @@ namespace CDP4Scripts
             var modelsetup = (EngineeringModelSetup)iterationsetup.Container;
             if (!modelsetup.Participant.Any(x => x.Person.Iid == this.session.ActivePerson.Iid && x.Domain.Any(d => d.Iid == domain.Iid)))
             {
-                throw new Cdp4ScriptException("The participant for the current person with the specified domain was not found");
+                throw new Cdp4ScriptException($"The participant for the current person with the specified domain was not found. You do not have permission to open the iteration with the domain {domainShortName}");
             }
 
             var model = new EngineeringModel(modelsetup.EngineeringModelIid, null, new Uri(this.session.DataSourceUri));

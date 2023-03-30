@@ -6,7 +6,7 @@
 //
 //    This file is part of CDP4-SDK Community Edition
 //
-//    The CDP4-SDK Community Edition is free software; you can redistribute it and/or
+//    The CDP4-Scripts Community Edition is free software; you can redistribute it and/or
 //    modify it under the terms of the GNU Lesser General Public
 //    License as published by the Free Software Foundation; either
 //    version 3 of the License, or (at your option) any later version.
@@ -32,35 +32,31 @@ namespace CDP4Scripts
     using CDP4Common.EngineeringModelData;
     using CDP4Common.Types;
     using CDP4Dal;
+    using CDP4Dal.Permission;
 
     /// <summary>
     /// A service that that returns engineering-model data based on the current <see cref="ISession"/>
     /// </summary>
-    public class DataReadService
+    public class DataReadService : BaseService
     {
-        /// <summary>
-        /// The current <see cref="ISession"/>
-        /// </summary>
-        private readonly ISession session;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="DataReadService"/> class
         /// </summary>
         /// <param name="session">The current session</param>
-        internal DataReadService(ISession session)
+        /// <param name="permissionService">The <see cref="IPermissionService"/></param>
+        internal DataReadService(ISession session, IPermissionService permissionService) : base(session, permissionService)
         {
-            this.session = session;
         }
 
         /// <summary>
         /// Gets a <see cref="ElementDefinition"/> or <see cref="ElementUsage"/> by its model-code
         /// </summary>
         /// <param name="iteration">The iteration</param>
-        /// <param name="modelcode">The modle-code</param>
+        /// <param name="modelcode">The model-code</param>
         /// <returns>The <see cref="ElementBase"/></returns>
         public ElementBase GetElementByModelCode(Iteration iteration, string modelcode)
         {
-            return this.session.Assembler.Cache
+            return this.Session.Assembler.Cache
                 .Values
                 .Select(x => x.Value)
                 .OfType<ElementBase>()
@@ -85,7 +81,7 @@ namespace CDP4Scripts
         /// <returns>The <see cref="IModelCode"/> thing</returns>
         public ParameterBase GetParameterByModelCode(Iteration iteration, string modelCode, bool getDomainValue)
         {
-            var things = this.session.Assembler.Cache
+            var things = this.Session.Assembler.Cache
                 .Values
                 .Select(x => x.Value)
                 .OfType<ParameterBase>()
@@ -107,7 +103,7 @@ namespace CDP4Scripts
             }
 
             // there should only be multiple thing with same model-id for parameter/override and their subscriptions
-            var domain = this.session.OpenIterations.SingleOrDefault(x => x.Key.Iid == iteration.Iid).Value?.Item1;
+            var domain = this.Session.OpenIterations.SingleOrDefault(x => x.Key.Iid == iteration.Iid).Value?.Item1;
             if (domain == null || !getDomainValue)
             {
                 return things.OfType<ParameterOrOverrideBase>().SingleOrDefault();
@@ -127,40 +123,7 @@ namespace CDP4Scripts
         /// <returns>The <see cref="IModelCode"/> thing</returns>
         public IValueSet GetValueSetByModelCode(Iteration iteration, string modelCode, bool getDomainValue)
         {
-            var things = this.session.Assembler.Cache
-                .Values
-                .Select(x => x.Value)
-                .OfType<IValueSet>()
-                .Where(
-                    x =>
-                    {
-                        var thing = (Thing)x;
-                        return thing.CacheId.Item2.HasValue
-                            && thing.CacheId.Item2.Value == iteration.Iid
-                            && this.GetAllParameterModelCode(x).Any(m => m.Equals(modelCode, StringComparison.InvariantCultureIgnoreCase));
-                    }
-                )
-                .ToArray();
-
-            if (things.Length == 0)
-            {
-                return null;
-            }
-
-            if (things.Length == 1)
-            {
-                return things.Single();
-            }
-
-            // there should only be multiple thing with same model-id for parameter/override and their subscriptions
-            var domain = this.session.OpenIterations.SingleOrDefault(x => x.Key.Iid == iteration.Iid).Value?.Item1;
-            if (domain == null || !getDomainValue)
-            {
-                return things.OfType<ParameterValueSetBase>().SingleOrDefault();
-            }
-
-            var domainSubscription = things.OfType<ParameterSubscriptionValueSet>().FirstOrDefault(x => x.Owner.Iid == domain.Iid);
-            return (IValueSet)domainSubscription ?? things.OfType<ParameterValueSetBase>().SingleOrDefault();
+            return this.ProtectedGetValueSetByModelCode(iteration, modelCode, getDomainValue);
         }
 
         /// <summary>
@@ -261,33 +224,6 @@ namespace CDP4Scripts
             }
 
             return value;
-        }
-
-        /// <summary>
-        /// Gets all model-code of a <see cref="IModelCode"/>
-        /// </summary>
-        /// <param name="modelCodeThing">The <see cref="IModelCode"/> thing</param>
-        /// <returns>The codes</returns>
-        /// <remarks>
-        /// Only a value-set for a compound-parameter-type has more than 1 model-code
-        /// </remarks>
-        private IEnumerable<string> GetAllParameterModelCode(IModelCode modelCodeThing)
-        {
-            var valueset = modelCodeThing as IValueSet;
-            if (valueset == null)
-            {
-                return new[] { modelCodeThing.ModelCode() };
-            }
-
-            // for a value-set its applicable model-code is all of them (in case of compound parameter-type)
-            var parameterContainer = (ParameterBase)((Thing)modelCodeThing).Container;
-            var modelCodes = new string[parameterContainer.ParameterType.NumberOfValues];
-            for (var i = 0; i < parameterContainer.ParameterType.NumberOfValues; i++)
-            {
-                modelCodes[i] = modelCodeThing.ModelCode(i);
-            }
-
-            return modelCodes;
         }
     }
 }

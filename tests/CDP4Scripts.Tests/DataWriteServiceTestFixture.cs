@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="DataReadServiceTestFixture.cs" company="RHEA System S.A.">
+// <copyright file="DataWriteServiceTestFixture.cs" company="RHEA System S.A.">
 //    Copyright (c) 2015-2018 RHEA System S.A.
 //
 //    Author: Sam Gerené, Merlin Bieze, Alex Vorobiev, Naron Phou
@@ -27,12 +27,14 @@ namespace CDP4ServicesForPython.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
     using CDP4Common.Types;
     using CDP4Dal;
     using CDP4Dal.DAL;
+    using CDP4Dal.Operations;
     using CDP4Dal.Permission;
     using CDP4Scripts;
     using NUnit.Framework;
@@ -40,14 +42,16 @@ namespace CDP4ServicesForPython.Tests
     using Moq;
 
     [TestFixture]
-    public class DataReadServiceTestFixture
+    public class DataWriteServiceTestFixture
     {
         private Mock<ISession> session;
         private Mock<IPermissionService> permissionService;
 
-        private DataReadService service;
+        private DataWriteService service;
 
         private Iteration iteration;
+        private DomainOfExpertise domain1;
+        private DomainOfExpertise domain2;
 
         private readonly Uri uri = new Uri("http://test.com");
 
@@ -62,8 +66,8 @@ namespace CDP4ServicesForPython.Tests
 
             #region site-dir
             var sitedir = new SiteDirectory(Guid.NewGuid(), assembler.Cache, this.uri);
-            var domain1 = new DomainOfExpertise(Guid.NewGuid(), assembler.Cache, this.uri);
-            var domain2 = new DomainOfExpertise(Guid.NewGuid(), assembler.Cache, this.uri);
+            this.domain1 = new DomainOfExpertise(Guid.NewGuid(), assembler.Cache, this.uri);
+            this.domain2 = new DomainOfExpertise(Guid.NewGuid(), assembler.Cache, this.uri);
 
             var modelsetup = new EngineeringModelSetup(Guid.NewGuid(), assembler.Cache, this.uri) { EngineeringModelIid = Guid.NewGuid() };
             var iterationsetup = new IterationSetup(Guid.NewGuid(), assembler.Cache, this.uri) { IterationIid = Guid.NewGuid() };
@@ -71,11 +75,12 @@ namespace CDP4ServicesForPython.Tests
             sitedir.Model.Add(modelsetup);
             modelsetup.IterationSetup.Add(iterationsetup);
 
-            sitedir.Domain.Add(domain1);
-            sitedir.Domain.Add(domain2);
+            sitedir.Domain.Add(this.domain1);
+            sitedir.Domain.Add(this.domain2);
 
-            var scalar1 = new SimpleQuantityKind(Guid.NewGuid(), assembler.Cache, this.uri) { ShortName = "scalar1" };
-            var scalar2 = new SimpleQuantityKind(Guid.NewGuid(), assembler.Cache, this.uri) { ShortName = "scalar2" };
+            var scale = new RatioScale(Guid.NewGuid(), assembler.Cache, this.uri) { NumberSet = NumberSetKind.REAL_NUMBER_SET };
+            var scalar1 = new SimpleQuantityKind(Guid.NewGuid(), assembler.Cache, this.uri) { ShortName = "scalar1", DefaultScale = scale};
+            var scalar2 = new SimpleQuantityKind(Guid.NewGuid(), assembler.Cache, this.uri) { ShortName = "scalar2", DefaultScale = scale};
             var compound = new CompoundParameterType(Guid.NewGuid(), assembler.Cache, this.uri) { ShortName = "compound" };
             var cpt1 = new ParameterTypeComponent(Guid.NewGuid(), assembler.Cache, this.uri) { ShortName = "cpt1", ParameterType = scalar1 };
             var cpt2 = new ParameterTypeComponent(Guid.NewGuid(), assembler.Cache, this.uri) { ShortName = "cpt2", ParameterType = scalar1 };
@@ -90,8 +95,8 @@ namespace CDP4ServicesForPython.Tests
             sitedir.SiteReferenceDataLibrary.Add(srdl);
 
             assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(sitedir.Iid, null), new Lazy<Thing>(() => sitedir));
-            assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(domain1.Iid, null), new Lazy<Thing>(() => domain1));
-            assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(domain2.Iid, null), new Lazy<Thing>(() => domain2));
+            assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(this.domain1.Iid, null), new Lazy<Thing>(() => this.domain1));
+            assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(this.domain2.Iid, null), new Lazy<Thing>(() => this.domain2));
             assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(modelsetup.Iid, null), new Lazy<Thing>(() => modelsetup));
             assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(iterationsetup.Iid, null), new Lazy<Thing>(() => iterationsetup));
             assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(scalar1.Iid, null), new Lazy<Thing>(() => scalar1));
@@ -120,7 +125,7 @@ namespace CDP4ServicesForPython.Tests
             var ed2 = new ElementDefinition(Guid.NewGuid(), assembler.Cache, this.uri) { ShortName = "ed2" };
             var us = new ElementUsage(Guid.NewGuid(), assembler.Cache, this.uri) { ShortName = "usage", ElementDefinition = ed2 };
 
-            var p1 = new Parameter(Guid.NewGuid(), assembler.Cache, this.uri) { ParameterType = scalar1, Owner = domain1};
+            var p1 = new Parameter(Guid.NewGuid(), assembler.Cache, this.uri) { ParameterType = scalar1, Owner = this.domain1, Scale = scale};
             var v1 = new ParameterValueSet(Guid.NewGuid(), assembler.Cache, this.uri);
             v1.Manual = new ValueArray<string>(new [] { "m1" });
             v1.Published = new ValueArray<string>(new [] { "p1" });
@@ -130,7 +135,7 @@ namespace CDP4ServicesForPython.Tests
 
             p1.ValueSet.Add(v1);
 
-            var sub = new ParameterSubscription(Guid.NewGuid(), assembler.Cache, this.uri) { Owner = domain2 };
+            var sub = new ParameterSubscription(Guid.NewGuid(), assembler.Cache, this.uri) { Owner = this.domain2 };
             var vs = new ParameterSubscriptionValueSet(Guid.NewGuid(), assembler.Cache, this.uri) { SubscribedValueSet = v1};
             vs.Manual = new ValueArray<string>(new[] { "s-m1" });
             vs.ValueSwitch = ParameterSwitchKind.MANUAL;
@@ -138,7 +143,7 @@ namespace CDP4ServicesForPython.Tests
 
             p1.ParameterSubscription.Add(sub);
 
-            var o1 = new ParameterOverride(Guid.NewGuid(), assembler.Cache, this.uri) { Parameter = p1, Owner = domain1 };
+            var o1 = new ParameterOverride(Guid.NewGuid(), assembler.Cache, this.uri) { Parameter = p1, Owner = this.domain1 };
             var ov1 = new ParameterOverrideValueSet(Guid.NewGuid(), assembler.Cache, this.uri) { ParameterValueSet = v1 };
             ov1.Manual = new ValueArray<string>(new[] { "o-m1" });
             ov1.Published = new ValueArray<string>(new[] { "o-p1" });
@@ -147,7 +152,7 @@ namespace CDP4ServicesForPython.Tests
             ov1.ValueSwitch = ParameterSwitchKind.MANUAL;
             o1.ValueSet.Add(ov1);
 
-            var p2 = new Parameter(Guid.NewGuid(), assembler.Cache, this.uri) { ParameterType = scalar2, IsOptionDependent = true, StateDependence = al, Owner = domain1 };
+            var p2 = new Parameter(Guid.NewGuid(), assembler.Cache, this.uri) { ParameterType = scalar2, IsOptionDependent = true, StateDependence = al, Owner = this.domain1, Scale = scale };
             var v21 = new ParameterValueSet(Guid.NewGuid(), assembler.Cache, this.uri) { ActualOption = option, ActualState = as1 };
             var v22 = new ParameterValueSet(Guid.NewGuid(), assembler.Cache, this.uri) { ActualOption = option, ActualState = as2 };
 
@@ -166,7 +171,7 @@ namespace CDP4ServicesForPython.Tests
             p2.ValueSet.Add(v21);
             p2.ValueSet.Add(v22);
 
-            var p3 = new Parameter(Guid.NewGuid(), assembler.Cache, this.uri) { ParameterType = compound, Owner = domain1 };
+            var p3 = new Parameter(Guid.NewGuid(), assembler.Cache, this.uri) { ParameterType = compound, Owner = this.domain1, Scale = scale };
             var v3 = new ParameterValueSet(Guid.NewGuid(), assembler.Cache, this.uri);
             v3.Manual = new ValueArray<string>(new[] { "m31", "m32" });
             v3.Published = new ValueArray<string>(new[] { "p31", "p32" });
@@ -215,82 +220,66 @@ namespace CDP4ServicesForPython.Tests
             assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(p2.Iid, this.iteration.Iid), new Lazy<Thing>(() => p2));
             assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(v21.Iid, this.iteration.Iid), new Lazy<Thing>(() => v21));
             assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(v22.Iid, this.iteration.Iid), new Lazy<Thing>(() => v22));
-            assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(p3.Iid, this.iteration.Iid), new Lazy<Thing>(() => p3));
+            assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(p3.Iid, this.iteration.Iid), new Lazy<Thing>(() => p3)); 
             assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(v3.Iid, this.iteration.Iid), new Lazy<Thing>(() => v3));
+            assembler.Cache.TryAdd(new Tuple<Guid, Guid?>(scale.Iid, null), new Lazy<Thing>(() => scale));
 
             #endregion
 
+
+
+            this.service = new DataWriteService(this.session.Object, this.permissionService.Object);
+        }
+
+        [Test]
+        public void VerifyWritesManualWorkAsExpected()
+        {
             this.session.Setup(x => x.OpenIterations).Returns(
                 new Dictionary<Iteration, Tuple<DomainOfExpertise, Participant>>
                 {
-                    {this.iteration, new Tuple<DomainOfExpertise, Participant>(domain2, null)}
+                    {this.iteration, new Tuple<DomainOfExpertise, Participant>(this.domain1, null)}
                 });
 
-            this.service = new DataReadService(this.session.Object, this.permissionService.Object);
+            this.service.UpdateDomainManualValue(this.iteration, @"ed1.scalar2\opt\ps1", "5.369");
+            this.session.Verify(x => x.Write(It.IsAny<OperationContainer>()), Times.Once);
         }
 
         [Test]
-        public void VerifyGetElementByModelCode()
+        public void VerifyWritesManualthrowsPermission()
         {
-            var ed1 = this.service.GetElementByModelCode(this.iteration, "ed1");
-            Assert.IsNotNull(ed1);
-            Assert.AreEqual("ed1", ed1.ShortName);
-        }
-
-        [Test]
-        public void VerifyGetElementUsageByModelCode()
-        {
-            var usage = this.service.GetElementByModelCode(this.iteration, "ed1.usage");
-            Assert.IsNotNull(usage);
-            Assert.AreEqual("usage", usage.ShortName);
-        }
-
-        [Test]
-        public void VerifyGetParameterByModelCode1()
-        {
-            var sub = (ParameterSubscription)this.service.GetParameterByModelCode(this.iteration, "ed2.scalar1", true);
-            Assert.IsNotNull(sub);
-        }
-
-        [Test]
-        public void VerifyGetParameterByModelCode2()
-        {
-            var param = (Parameter)this.service.GetParameterByModelCode(this.iteration, "ed2.scalar1", false);
-            Assert.IsNotNull(param);
-        }
-
-        [Test]
-        public void VerifyGetParameterByModelCode3()
-        {
-            var param = (ParameterOverride)this.service.GetParameterByModelCode(this.iteration, "ed1.usage.scalar1", true);
-            Assert.IsNotNull(param);
-        }
-
-        [Test]
-        public void VerifyGetValue1()
-        {
-            Assert.Throws<Cdp4ScriptException>(
-                () =>
+            this.session.Setup(x => x.OpenIterations).Returns(
+                new Dictionary<Iteration, Tuple<DomainOfExpertise, Participant>>
                 {
-                    var vs = this.service.GetDomainActualValue(this.iteration, "ed1.scalar2");
+                    {this.iteration, new Tuple<DomainOfExpertise, Participant>(this.domain2, null)}
                 });
+
+            Assert.Throws<Cdp4ScriptException>(() => this.service.UpdateDomainManualValue(this.iteration, @"ed1.scalar2\opt\ps1", "5.369"));
         }
 
         [Test]
-        public void VerifyGetValue2()
+        public void VerifyWritesManualSubscriptionsWorks()
         {
-            var vs = this.service.GetDomainActualValue(this.iteration, @"ed1.scalar2\opt\ps1");
-            Assert.AreEqual("m2-s1", vs);
+            this.session.Setup(x => x.OpenIterations).Returns(
+                new Dictionary<Iteration, Tuple<DomainOfExpertise, Participant>>
+                {
+                    {this.iteration, new Tuple<DomainOfExpertise, Participant>(this.domain2, null)}
+                });
+
+            this.service.UpdateDomainManualValue(this.iteration, @"ed2.scalar1", "5.369");
+            this.session.Verify(x => x.Write(It.Is<OperationContainer>(oc => oc.Operations.Any(o => o.ModifiedThing is CDP4Common.DTO.ParameterSubscriptionValueSet))), Times.Once);
         }
 
         [Test]
-        public void VerifyGetValue3()
+        public void VerifyWriteReferenceOverridethrowsPermission()
         {
-            var v1 = this.service.GetDomainActualValue(this.iteration, @"ed1.compound.cpt1");
-            Assert.AreEqual("m31", v1);
+            this.session.Setup(x => x.OpenIterations).Returns(
+                new Dictionary<Iteration, Tuple<DomainOfExpertise, Participant>>
+                {
+                    {this.iteration, new Tuple<DomainOfExpertise, Participant>(this.domain1, null)}
+                });
 
-            var v2 = this.service.GetDomainActualValue(this.iteration, @"ed1.compound.cpt2");
-            Assert.AreEqual("m32", v2);
+            this.service.UpdateDomainComputedValue(this.iteration, @"ed1.usage.scalar1", "5.369");
+            this.session.Verify(x => x.Write(It.Is<OperationContainer>(oc => oc.Operations.Any(o => o.ModifiedThing is CDP4Common.DTO.ParameterOverrideValueSet))), Times.Once);
         }
     }
 }

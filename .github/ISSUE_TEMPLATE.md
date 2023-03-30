@@ -1,7 +1,7 @@
 ### Prerequisites
 
 - [ ] I have written a descriptive issue title
-- [ ] I have verified that I am running the latest version of the CDP4-SDK
+- [ ] I have verified that I am running the latest version of the CDP4-Scripts
 - [ ] I have searched [open](https://github.com/RHEAGROUP/CDP4-CDP4-Scripts/issues) and [closed](https://github.com/RHEAGROUP/CDP4-Scripts/issues?q=is%3Aissue+is%3Aclosed) issues to ensure it has not already been reported
 
 ### Description
